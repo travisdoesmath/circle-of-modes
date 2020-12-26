@@ -137,7 +137,7 @@ noteOrder = {
 
 
 let rScale = d3.scaleLinear().domain([-3,3]).range([0.3 * Math.min(height/2, width/2), 0.9 * Math.min(height/2, width/2)])
-let rScale2 = d3.scaleLinear().domain([-3,3]).range([0.2, 0.7])
+let rScale2 = d3.scaleLinear().domain([-3,3]).range([0.2, 0.65])
 let aScale = d3.scaleLinear().domain([0, 12]).range([0, 2 * Math.PI])
 
 wedges = bg.selectAll('.wedge').data(data).enter().append('g')
@@ -149,7 +149,7 @@ wedges.append('path')
                             startAngle: aScale(noteOrder[d.rootNote] - 0.5),
                             endAngle: aScale(noteOrder[d.rootNote] + 0.5),
                             }))
-    .style('fill', d => d3.cubehelix(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 60, 0.8, rScale2(modeOrder[d.mode])))
+    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 80, 100 * rScale2(modeOrder[d.mode])))
 
 wedges.append('text')
     .attr('text-anchor', 'middle')
@@ -162,7 +162,7 @@ wedges.append('text')
         return `translate(${centroid[0]},${centroid[1]}) rotate(${aScale(noteOrder[d.rootNote]) * 180 / Math.PI})`;
     })
     .attr('font-size', '.8em')
-    .style('fill', d => d3.cubehelix(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 60, 0.7, 0.7 + rScale2(modeOrder[d.mode])/2))
+    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder[d.mode])))
     .text(d => `${d.root} ${d.mode}`)
 
 wedges.append('text')
@@ -177,7 +177,7 @@ wedges.append('text')
     })
     .attr('font-size', '.8em')
     .attr('dy', '1.2em')
-    .style('fill', d => d3.cubehelix(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 60, 0.7, 0.9))
+    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder[d.mode])))
     .text(d => {
         _ = x => x > 0 ? `${x} ♯` : x < 0 ? `${-x} ♭` : `♮`
         if (d.notes.length == 1) return _(d.notes[0].accidentals)
