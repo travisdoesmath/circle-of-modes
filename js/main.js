@@ -110,44 +110,82 @@ let svg = d3.select("svg")
 
 let arc = d3.arc()
 
-modeOrder = {
-    'Locrian':-3,
-    'Phrygian':-2,
-    'Aeolian':-1,
-    'Dorian':0,
-    'Mixolydian':1,
-    'Ionian':2,
-    'Lydian':3
-}
+modeOrders = [
+    {
+        'Locrian':-3,
+        'Phrygian':-2,
+        'Aeolian':-1,
+        'Dorian':0,
+        'Mixolydian':1,
+        'Ionian':2,
+        'Lydian':3
+    },
+    {
+        'Ionian':-3,
+        'Dorian':-2,
+        'Phrygian':-1,
+        'Lydian':0,
+        'Mixolydian':1,
+        'Aeolian':2,
+        'Locrian':3
+    }
+]
 
-noteOrder = {
-    2 : 0, // D 
-    9 : 1, // A
-    4 : 2, // E
-    11: 3, // B
-    6 : 4, // F♯/G♭
-    1 : 5, // C♯/D♭
-    8 : 6, // G♯/A♭
-    7 : -1, // G
-    0 : -2, // C
-    5 : -3, // F
-    10: -4, // A♯/B♭
-    3 : -5, // D♯/E♭
-}
+noteOrders = [
+    {
+        2 : 0, // D 
+        9 : 1, // A
+        4 : 2, // E
+        11: 3, // B
+        6 : 4, // F♯/G♭
+        1 : 5, // C♯/D♭
+        8 : 6, // G♯/A♭
+        7 : -1, // G
+        0 : -2, // C
+        5 : -3, // F
+        10: -4, // A♯/B♭
+        3 : -5, // D♯/E♭
+    },
+    {
+        0 : 0, 
+        1 : 1, 
+        2 : 2, 
+        3 : 3, 
+        4 : 4, 
+        5 : 5, 
+        6 : 6, 
+        7 : 7, 
+        8 : 8, 
+        9 : 9, 
+        10: 10, 
+        11 : 11, 
+    }
+]
 
+states = [
+    {modeOrder: modeOrders[0], noteOrder: noteOrders[0], relative: false},
+    {modeOrder: modeOrders[1], noteOrder: noteOrders[0], relative: false},
+    {modeOrder: modeOrders[1], noteOrder: noteOrders[0], relative: true},
+    {modeOrder: modeOrders[0], noteOrder: noteOrders[1], relative: true},
+    {modeOrder: modeOrders[0], noteOrder: noteOrders[1], relative: false},
+]
+
+modeOrder = states[0].modeOrder
+noteOrder = states[0].noteOrder
+relative = states.relative;
 
 let rScale = d3.scaleLinear().domain([-3,3]).range([0.3 * Math.min(height/2, width/2), 0.9 * Math.min(height/2, width/2)])
 let rScale2 = d3.scaleLinear().domain([-3,3]).range([0.2, 0.65])
+let rScale3 = d3.scaleLinear().domain([-3,3]).range([4, 8])
 let aScale = d3.scaleLinear().domain([0, 12]).range([0, 2 * Math.PI])
 
-wedges = bg.selectAll('.wedge').data(data).enter().append('g')
+wedges = bg.selectAll('.wedge').data(data).enter().append('g').attr('class','wedge')
 
 wedges.append('path')
-    .attr('class','wedge')
     .attr('d', d => arc({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
                             outerRadius: rScale(modeOrder[d.mode] + 0.5), 
-                            startAngle: aScale(noteOrder[d.rootNote] - 0.5),
-                            endAngle: aScale(noteOrder[d.rootNote] + 0.5),
+                            startAngle: aScale(noteOrder[d.rootNote] - 0.5 - (relative ? modeOrder[d.mode] : 0)),
+                            endAngle: aScale(noteOrder[d.rootNote] + 0.5 - (relative ? modeOrder[d.mode] : 0)),
                             }))
     .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 80, 100 * rScale2(modeOrder[d.mode])))
 
@@ -156,8 +194,8 @@ wedges.append('text')
     .attr('transform', d => {
         let centroid = arc.centroid({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
                             outerRadius: rScale(modeOrder[d.mode] + 0.5), 
-                            startAngle: aScale(noteOrder[d.rootNote] - 0.5),
-                            endAngle: aScale(noteOrder[d.rootNote] + 0.5),
+                            startAngle: aScale(noteOrder[d.rootNote] - 0.5 - (relative ? modeOrder[d.mode] : 0)),
+                            endAngle: aScale(noteOrder[d.rootNote] + 0.5 - (relative ? modeOrder[d.mode] : 0)),
                             });
         return `translate(${centroid[0]},${centroid[1]}) rotate(${aScale(noteOrder[d.rootNote]) * 180 / Math.PI})`;
     })
@@ -170,8 +208,8 @@ wedges.append('text')
     .attr('transform', d => {
         let centroid = arc.centroid({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
                             outerRadius: rScale(modeOrder[d.mode] + 0.5), 
-                            startAngle: aScale(noteOrder[d.rootNote] - 0.5),
-                            endAngle: aScale(noteOrder[d.rootNote] + 0.5),
+                            startAngle: aScale(noteOrder[d.rootNote] - 0.5 - (relative ? modeOrder[d.mode] : 0)),
+                            endAngle: aScale(noteOrder[d.rootNote] + 0.5 - (relative ? modeOrder[d.mode] : 0)),
                             });
         return `translate(${centroid[0]},${centroid[1]}) rotate(${aScale(noteOrder[d.rootNote]) * 180 / Math.PI})`;
     })
@@ -190,12 +228,57 @@ outlineWedges.append('path')
     .attr('class','wedge-outline')
     .attr('d', d => arc({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
                             outerRadius: rScale(modeOrder[d.mode] + 0.5), 
-                            startAngle: aScale(noteOrder[d.rootNote] - 0.5),
-                            endAngle: aScale(noteOrder[d.rootNote] + 0.5),
+                            startAngle: aScale(noteOrder[d.rootNote] - 0.5 - (relative ? modeOrder[d.mode] : 0)),
+                            endAngle: aScale(noteOrder[d.rootNote] + 0.5 - (relative ? modeOrder[d.mode] : 0)),
                             }))
     .style('fill', 'none')
     .style('stroke', 'white')
-    .style('stroke-width', '5px')
+    .style('stroke-width', d => rScale3(modeOrder[d.mode]))
+
+svg.on('click', e => {
+    states = states.concat(states).slice(1, states.length+1)
+
+    animate(states[0].modeOrder, states[0].noteOrder, states[0].relative)
+})
+
+function animate(modeOrder, noteOrder, relative, duration = 2000) {
+
+    wedges = bg.selectAll('.wedge').select('path').data(data)
+
+    wedges.transition()
+    .duration(duration)
+    .attr('d', d => arc({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
+                            outerRadius: rScale(modeOrder[d.mode] + 0.5), 
+                            startAngle: aScale((relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) - 0.5),
+                            endAngle: aScale((relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) + 0.5),
+                            }))
+
+    wedgeText = bg.selectAll('.wedge').data(data).selectAll('text')
+
+    wedgeText.transition()
+        .duration(duration)
+        .attr('transform', d => {
+        let centroid = arc.centroid({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
+                            outerRadius: rScale(modeOrder[d.mode] + 0.5), 
+                            startAngle: aScale((relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) - 0.5),
+                            endAngle: aScale((relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) + 0.5),
+                            });
+        //return `translate(${centroid[0]},${centroid[1]}) rotate(${aScale(noteOrder[d.rootNote] - (relative ? modeOrder[d.mode] : 0)) * 180 / Math.PI})`;
+        return `translate(${centroid[0]},${centroid[1]}) rotate(${aScale(relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) * 180 / Math.PI})`;
+    })
+
+    outlineWedges = fg.selectAll('.wedge-outline').data(data.filter(d => d.notes[0].accidentals == 0))
+
+    outlineWedges.transition()
+    .duration(duration)
+    .attr('d', d => arc({innerRadius: rScale(modeOrder[d.mode] - 0.5), 
+                            outerRadius: rScale(modeOrder[d.mode] + 0.5), 
+                            startAngle: aScale((relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) - 0.5),
+                            endAngle: aScale((relative ? d.notes[0].accidentals : noteOrder[d.rootNote]) + 0.5),
+                            }))
+
+    console.log('click')
+}
 
 // test = getModeNoteNames(8, 'Dorian')
 // console.log(test)
