@@ -105,10 +105,12 @@ for (let i = 0; i < 12; i++) {
 
 
 let svg = d3.select("svg")
+    g = svg.append('g')
 	width = +svg.attr("width"),
 	height = +svg.attr("height")
-	bg = svg.append("g").attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
-    fg = svg.append("g").attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
+	bg = g.append("g").attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
+    fg = g.append("g").attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
+    controlsG = svg.append('g').attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
 
 let arc = d3.arc()
 
@@ -169,6 +171,7 @@ noteOrders = [
     }
 ]
 
+rotation = 0;
 
 states = [
     {modeOrder: modeOrders[0], noteOrder: noteOrders[0], relative: false},
@@ -289,14 +292,87 @@ outlineWedges.append('path')
     .style('stroke-width', d => rScale3(modeOrder[d.mode]))
     .attr('transform', d => rotate(d))
 
-svg.on('click', e => {
-    states = states.concat(states).slice(1, states.length+1)
+ccwRotateArrow = controlsG.append('g')
+    .attr('class','rotate-arrow')
+    .attr('transform', 'rotate(-37.5)')
+
+ccwRotateArrow.append('path')
+    .attr('d', d3.arc()
+                 .innerRadius(rScale(3.5))
+                 .outerRadius(rScale(5.25))
+                 .startAngle(-1/24 * Math.PI)
+                 .endAngle(3/24 * Math.PI )
+    )
+    .style('opacity', 0)
+
+ccwRotateArrow.append('path')
+    .attr('d', d3.arc()
+                 .innerRadius(rScale(4.25))
+                 .outerRadius(rScale(4.5))
+                 .startAngle(0)
+                 .endAngle(2/24 * Math.PI )
+    )
+    .style('fill', '#EDD')
+
+ccwRotateArrow.append('path')
+    .attr('d', d => `M1,${-rScale(4.375)} L 1, ${-rScale(4.375)-15} L-15,${-rScale(4.375)} L1,${-rScale(4.375)+15} L 1,${-rScale(4.375)}`)
+    .style('fill', '#EDD')
+
+
+cwRotateArrow = controlsG.append('g')
+    .attr('class','rotate-arrow')
+    .attr('transform', 'rotate(37.5)')
+    
+cwRotateArrow.append('path')
+    .attr('d', d3.arc()
+                 .innerRadius(rScale(3.5))
+                 .outerRadius(rScale(5.25))
+                 .startAngle(-3/24 * Math.PI)
+                 .endAngle(1/24 * Math.PI )
+    )
+    .style('opacity', 0)
+
+
+cwRotateArrow.append('path')
+    .attr('d', d3.arc()
+                 .innerRadius(rScale(4.25))
+                 .outerRadius(rScale(4.5))
+                 .startAngle(-2/24 * Math.PI )
+                 .endAngle(0)
+    )
+    .style('fill', '#DDE')
+
+cwRotateArrow.append('path')
+    .attr('d', d => `M-1,${-rScale(4.375)} L -1, ${-rScale(4.375)-15} L15,${-rScale(4.375)} L-1,${-rScale(4.375)+15} L -1,${-rScale(4.375)}`)
+    .style('fill', '#DDE')
+
+
+ccwRotateArrow.on('click', e => rotateAnimate(-1))
+cwRotateArrow.on('click', e => rotateAnimate(1))
+
+
+controlsG.append('circle')
+    .attr('cx', 0)
+    .attr('cy', 0)
+    .attr('r', rScale(3.5))
+    //.attr('fill', 'none')
+    .attr('opacity', 0)
+    .on('click', e => {
+        states = states.concat(states).slice(1, states.length+1)
 
     animate(states[0].modeOrder, states[0].noteOrder, states[0].relative)
 })
 
-function animate(modeOrder, noteOrder, relative, duration = 1000) {
-    let rotate = d => `rotate(${Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI)})`
+function rotateAnimate(direction) {
+
+    rotation += direction;
+    
+    animate(states[0].modeOrder, states[0].noteOrder, states[0].relative, duration = 150, fadeText = false)
+}
+
+function animate(modeOrder, noteOrder, relative, duration = 1000, fadeText = true) {
+    console.log(fadeText)
+    let rotate = d => `rotate(${Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) + rotation - 0.5) * 180 / Math.PI)})`
 
     let dToArcData = d => { return {
         'innerRadius': rScale(modeOrder[d.mode] - 0.5),
@@ -307,35 +383,41 @@ function animate(modeOrder, noteOrder, relative, duration = 1000) {
 
     wedges = bg.selectAll('.wedge').data(data)
     
+    textDelay = 0
     
-    wedges.selectAll('text')
-    .style('opacity', 1)
-    .transition()
-    .delay((d, i) => {
-        return (13 * d.rootNote) + 21 * (modeOrder[d.mode]) 
-    })
-    .duration(300)
-    .style('opacity', 0)
-    // .transition()
-    // .duration(0)
-    // .style('display', 'none')
-    .transition()
-    // .delay((d, i) => {
-    //     return duration -100 + (5 * d.rootNote) + 8 * (modeOrder[d.mode]) 
-    // })
-    .delay(duration - (10 * 12 + 16 * 7))
-    // .duration(0)   
-    // .style('display', 'block')
-    .transition()
-    .duration(500)
-    .style('opacity', 1)
+    if (fadeText) {
+        console.log('fade text called')
+        wedges.selectAll('text')
+        .style('opacity', 1)
+        .transition()
+        .delay((d, i) => {
+            return (13 * d.rootNote) + 21 * (modeOrder[d.mode]) 
+        })
+        .duration(300)
+        .style('opacity', 0)
+        // .transition()
+        // .duration(0)
+        // .style('display', 'none')
+        .transition()
+        // .delay((d, i) => {
+        //     return duration -100 + (5 * d.rootNote) + 8 * (modeOrder[d.mode]) 
+        // })
+        .delay(duration - (10 * 12 + 16 * 7))
+        // .duration(0)   
+        // .style('display', 'block')
+        .transition()
+        .duration(500)
+        .style('opacity', 1)
+        textDelay = 500
+    }
+
 
     wedges.transition()
-    .delay(500)
+    .delay(textDelay)
     .duration(duration)
     .attrTween('transform', function(d) {
         let a = parseFloat(this.getAttribute("transform").split('(')[1].split(')')[0]) % 360
-        let b = Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI) % 360
+        let b = Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5 + rotation) * 180 / Math.PI) % 360
         if (a - b > 180) b += 360; else if (b - a > 180) a += 360
         if (Math.abs(a - b) % 180 < 1) {
             while (a < b) {
@@ -346,13 +428,13 @@ function animate(modeOrder, noteOrder, relative, duration = 1000) {
     })
                             
     wedges.select('path').transition()
-    .delay(500)
+    .delay(textDelay)
     .duration(duration)
     .attr('d', d => arc(dToArcData(d))) 
 
     wedges.select('.textPath1')
     .transition()
-    .delay(500)
+    .delay(textDelay)
     .duration(duration)
     .attr('d', d => {
         let r = rScale(modeOrder[d.mode]);
@@ -364,7 +446,7 @@ function animate(modeOrder, noteOrder, relative, duration = 1000) {
 
     wedges.select('.textPath2')
     .transition()
-    .delay(500)
+    .delay(textDelay)
     .duration(duration)
     .attr('d', d => {
         let r = rScale(modeOrder[d.mode] - 0.33);
@@ -386,7 +468,7 @@ function animate(modeOrder, noteOrder, relative, duration = 1000) {
     outlineWedges = fg.selectAll('.wedge-outline').data(data.filter(d => d.notes[0].accidentals == 0))
 
     outlineWedges.transition()
-    .delay(500)
+    .delay(textDelay)
     .duration(duration)
     .attr('d', d => arc(dToArcData(d)))
     .attr('transform', rotate)
