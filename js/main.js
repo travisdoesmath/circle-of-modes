@@ -177,7 +177,6 @@ states = [
     {modeOrder: modeOrders[0], noteOrder: noteOrders[1], relative: true},
     {modeOrder: modeOrders[0], noteOrder: noteOrders[2], relative: true},
     {modeOrder: modeOrders[0], noteOrder: noteOrders[1], relative: false},
-    
 ]
 
 modeOrder = states[0].modeOrder
@@ -192,7 +191,6 @@ let aScale = d3.scaleLinear().domain([0, 12]).range([0, 2 * Math.PI])
 let dToArcData = d => { return {
     'innerRadius': rScale(modeOrder[d.mode] - 0.5),
     'outerRadius': rScale(modeOrder[d.mode] + 0.5),
-    //'startAngle' : aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote]) - 0.5),
     'startAngle' : 0,
     'endAngle'   : aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
 }}
@@ -207,24 +205,71 @@ wedges.append('path')
     .attr('d', d => arc(dToArcData(d)))
     .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 80, 100 * rScale2(modeOrder[d.mode])))
 
-//text = fg.selectAll('.wedge-text').data(data).enter().append('g').attr('class','wedge-text')
+// wedges.append('path')
+//     .attr('id', d => `text-path-1-${d.root}-${d.mode}`)
+//     .attr('class','textPath1')
+//     .attr('d', d => {
+//         let arcData = dToArcData(d);
+//         arcData.innerRadius = rScale(modeOrder[d.mode])
+//         arcData.outerRadius = rScale(modeOrder[d.mode])
+//         return arc(arcData)
+//     })
+
+wedges.append('path')
+    .attr('id', d => `text-path-1-${d.root}-${d.mode}`)
+    .attr('class','textPath1')
+    //.attr('d', d => `M0,${-rScale(modeOrder[d.mode])} A${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,`)    
+    .attr('d', d => {
+        let r = rScale(modeOrder[d.mode]);
+        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
+        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+    })
+    .attr('transform', d => `translate(0,${-rScale(modeOrder[d.mode])}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`)
+
+wedges.append('path')
+    .attr('id', d => `text-path-2-${d.root}-${d.mode}`)
+    .attr('class','textPath2')
+    // .attr('d', d => {
+    //     let arcData = dToArcData(d);
+    //     arcData.innerRadius = rScale(modeOrder[d.mode] - 0.33)
+    //     arcData.outerRadius = rScale(modeOrder[d.mode] - 0.33)
+    //     return arc(arcData)
+    // })
+    .attr('d', d => {
+        let r = rScale(modeOrder[d.mode] - 0.33);
+        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
+        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+    })
+    .attr('transform', d => {
+        let r = rScale(modeOrder[d.mode] - 0.33);
+        return `translate(0,${-r}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`
+    })
+
 
 wedges.append('text')
     .attr('text-anchor', 'middle')
-    .attr('transform', d => {
-        let centroid = arc.centroid(dToArcData(d));
-        return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;
-    })
+    .append('textPath')
+    .attr('href', d => `#text-path-1-${d.root}-${d.mode}`)
+    .attr('startOffset','50%')
+    // .attr('transform', d => {
+    //     let centroid = arc.centroid(dToArcData(d));
+    //     return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;
+    // })
     .attr('font-size', '.8em')
     .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder[d.mode])))
     .text(d => `${d.root} ${d.mode}`)
 
 wedges.append('text')
     .attr('text-anchor', 'middle')
-    .attr('transform', d => {
-        let centroid = arc.centroid(dToArcData(d));
-        return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;
-    })
+    // .attr('transform', d => {
+    //     let centroid = arc.centroid(dToArcData(d));
+    //     return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;
+    // })
+    .append('textPath')
+    .attr('href', d => `#text-path-2-${d.root}-${d.mode}`)
+    .attr('startOffset','50%')
     .attr('font-size', '.8em')
     .attr('dy', '1.2em')
     .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder[d.mode])))
@@ -250,42 +295,43 @@ svg.on('click', e => {
     animate(states[0].modeOrder, states[0].noteOrder, states[0].relative)
 })
 
-function animate(modeOrder, noteOrder, relative, duration = 1500) {
+function animate(modeOrder, noteOrder, relative, duration = 1000) {
     let rotate = d => `rotate(${Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI)})`
-
-    function rotateTween(deg) {
-        
-    }
 
     let dToArcData = d => { return {
         'innerRadius': rScale(modeOrder[d.mode] - 0.5),
         'outerRadius': rScale(modeOrder[d.mode] + 0.5),
-        //'startAngle' : aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote]) - 0.5),
         'startAngle' : 0,
         'endAngle'   : aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
     }}
 
-    function arcTween(newD) {
-        console.log('newD', newD)
-        return function(d) {
-            console.log('d', d)
-            let interpolateStartAngle = d3.interpolate(d.startAngle, newD.startAngle);
-            let interpolateEndAngle = d3.interpolate(d.endAngle, newD.endAngle);
-            let interpolateInnerRadius = d3.interpolate(d.innerRadius, newD.innerRadius);
-            let interpolateOuterRadius = d3.interpolate(d.outerRadius, newD.outerRadius);
-            return function(t) {
-                d.startAngle = interpolateStartAngle(t);
-                d.endAngle = interpolateEndAngle(t);
-                d.innerRadius = interpolateInnerRadius(t);
-                d.outerRadius = interpolateOuterRadius(t);
-                return arc(d);
-            }
-        }
-    }
-
     wedges = bg.selectAll('.wedge').data(data)
+    
+    
+    wedges.selectAll('text')
+    .style('opacity', 1)
+    .transition()
+    .delay((d, i) => {
+        return (13 * d.rootNote) + 21 * (modeOrder[d.mode]) 
+    })
+    .duration(300)
+    .style('opacity', 0)
+    // .transition()
+    // .duration(0)
+    // .style('display', 'none')
+    .transition()
+    // .delay((d, i) => {
+    //     return duration -100 + (5 * d.rootNote) + 8 * (modeOrder[d.mode]) 
+    // })
+    .delay(duration - (10 * 12 + 16 * 7))
+    // .duration(0)   
+    // .style('display', 'block')
+    .transition()
+    .duration(500)
+    .style('opacity', 1)
 
     wedges.transition()
+    .delay(500)
     .duration(duration)
     .attrTween('transform', function(d) {
         let a = parseFloat(this.getAttribute("transform").split('(')[1].split(')')[0]) % 360
@@ -300,18 +346,47 @@ function animate(modeOrder, noteOrder, relative, duration = 1500) {
     })
                             
     wedges.select('path').transition()
+    .delay(500)
     .duration(duration)
-    .attr('d', d => arc(dToArcData(d)))
+    .attr('d', d => arc(dToArcData(d))) 
 
-    wedges.selectAll('text').transition()
-        .duration(duration)
-        .attr('transform', d => {
-        let centroid = arc.centroid(dToArcData(d));
-        return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;})
+    wedges.select('.textPath1')
+    .transition()
+    .delay(500)
+    .duration(duration)
+    .attr('d', d => {
+        let r = rScale(modeOrder[d.mode]);
+        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
+        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+    })
+    .attr('transform', d => `translate(0,${-rScale(modeOrder[d.mode])}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`)
+
+    wedges.select('.textPath2')
+    .transition()
+    .delay(500)
+    .duration(duration)
+    .attr('d', d => {
+        let r = rScale(modeOrder[d.mode] - 0.33);
+        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
+        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+    })
+    .attr('transform', d => {
+        let r = rScale(modeOrder[d.mode] - 0.33);
+        return `translate(0,${-r}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`
+    })
+
+    // wedges.selectAll('text').transition()
+    //     .duration(duration)
+    //     .attr('transform', d => {
+    //     let centroid = arc.centroid(dToArcData(d));
+    //     return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;})
 
     outlineWedges = fg.selectAll('.wedge-outline').data(data.filter(d => d.notes[0].accidentals == 0))
 
     outlineWedges.transition()
+    .delay(500)
     .duration(duration)
     .attr('d', d => arc(dToArcData(d)))
     .attr('transform', rotate)
