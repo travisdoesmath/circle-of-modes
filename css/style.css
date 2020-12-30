@@ -32,6 +32,13 @@ h1 {
     display: inline-flex;
 }
 
+footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 1em;
+}
+
 
 @media (min-width: 1460px) {
     .secondary-content {
