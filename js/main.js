@@ -111,7 +111,8 @@ rotation = 0;
 let state = {
     noteOrder: 'fifths',
     modeOrder: 'brightness',
-    modeGrouping: 'parallel'
+    modeGrouping: 'parallel',
+    accidentals: 'flats'
 }
 
 selected = data.filter(d => d.root == 'D' && d.mode == 'Dorian')
@@ -270,14 +271,15 @@ function addControls() {
     cwRotateArrow.on('click', e => rotateUpdate(1))
 
     d3.selectAll('.switch input').on('click', function(e) {
-        if (this.id == 'note-order-chromatic') state.noteOrder ='chromatic'
-        if (this.id == 'note-order-fifths') state.noteOrder = 'fifths'
-        if (this.id == 'mode-order-degree') state.modeOrder = 'degree'
-        if (this.id == 'mode-order-brightness') state.modeOrder = 'brightness'
-        if (this.id == 'mode-grouping-parallel') state.modeGrouping = 'parallel'
-        if (this.id == 'mode-grouping-relative') state.modeGrouping = 'relative'
+        if (this.id == 'note-order-chromatic') { state.noteOrder ='chromatic'; update() }
+        if (this.id == 'note-order-fifths') { state.noteOrder = 'fifths'; update() }
+        if (this.id == 'mode-order-degree') { state.modeOrder = 'degree'; update() }
+        if (this.id == 'mode-order-brightness') { state.modeOrder = 'brightness'; update() }
+        if (this.id == 'mode-grouping-parallel') { state.modeGrouping = 'parallel'; update() }
+        if (this.id == 'mode-grouping-relative') { state.modeGrouping = 'relative'; update() }
+        if (this.id == 'accidentals-flats') { state.accidentals = 'flats'; drawSelected() }
+        if (this.id == 'accidentals-sharps') { state.accidentals = 'sharps'; drawSelected() }
 
-        update()
     })
 }
 
@@ -316,7 +318,17 @@ function drawSelected() {
     .append('li')
     .attr('class', 'modeNotes')
     .merge(modeNotes)
-    .text(d => `${d.root} ${d.mode}: ${d.notes[0].names.join(' - ')}`)
+    .text(d => {
+        let notes = d.notes[0];
+        if (d.notes.length > 1) {
+            if (state.accidentals == 'flats') {
+                notes = d.notes.filter(x => x.accidentals < 0)[0]
+            } else if (state.accidentals == 'sharps') {
+                notes = d.notes.filter(x => x.accidentals > 0)[0]
+            }
+        }
+        return `${d.root} ${d.mode}: ${notes.names.join(' - ')}`;
+    })
 
     modeNotes.exit().remove()
 }
