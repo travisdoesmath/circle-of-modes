@@ -1,0 +1,48 @@
+body {
+    background-color: #111;
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    margin: 0 auto 4em auto;
+    tab-size: 2;
+    -webkit-text-size-adjust: none;
+    color: #DDD;
+}
+
+h1 {
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 46px;
+    font-weight: 500;
+    letter-spacing: -1px;
+    margin: 0.1em 0;
+}
+
+.column {
+    max-width: 1500px;
+    position: relative;
+    display: block;
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
+.container {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.rotate-arrow{
+    fill: #DDD;
+}
+
+.rotate-arrow:hover{
+    fill: rgb(71, 143, 202)
+}
+
+.textPath1, .textPath2 {
+    fill: none;
+    stroke: none;
+}
+
+svg {
+    /* shape-rendering: optimizeSpeed; */
+    text-rendering: optimizeSpeed;
+}

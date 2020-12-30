@@ -114,46 +114,52 @@ let svg = d3.select("svg")
 
 let arc = d3.arc()
 
-modeOrders = [
-    {
-        'Locrian':-3,
-        'Phrygian':-2,
-        'Aeolian':-1,
-        'Dorian':0,
-        'Mixolydian':1,
-        'Ionian':2,
-        'Lydian':3
-    },
-    {
-        'Ionian':-3,
-        'Dorian':-2,
-        'Phrygian':-1,
-        'Lydian':0,
-        'Mixolydian':1,
-        'Aeolian':2,
-        'Locrian':3
-    }
-]
-
-noteOrders = [
-    n => {
+modeOrders = {
+    'brightness': n => {
         return {
-            2 : 0, // D 
-            9 : 1, // A
-            4 : 2, // E
-            11: 3, // B
-            6 : 4, // F♯/G♭
-            1 : 5, // C♯/D♭
-            8 : 6, // G♯/A♭
-            7 : 11, // G
-            0 : 10, // C
-            5 : 9, // F
-            10: 8, // A♯/B♭
-            3 : 7, // D♯/E♭
-        }[n]
+            'Locrian':-3,
+            'Phrygian':-2,
+            'Aeolian':-1,
+            'Dorian':0,
+            'Mixolydian':1,
+            'Ionian':2,
+            'Lydian':3
+        }[n]},
+    'degree': n => {
+        return {
+            'Ionian':-3,
+            'Dorian':-2,
+            'Phrygian':-1,
+            'Lydian':0,
+            'Mixolydian':1,
+            'Aeolian':2,
+            'Locrian':3
+        }[n]}
+}
+
+noteOrders = {
+    'parallel':{
+        'fifths': n => {
+            return {
+                2 : 0, // D 
+                9 : 1, // A
+                4 : 2, // E
+                11: 3, // B
+                6 : 4, // F♯/G♭
+                1 : 5, // C♯/D♭
+                8 : 6, // G♯/A♭
+                7 : 11, // G
+                0 : 10, // C
+                5 : 9, // F
+                10: 8, // A♯/B♭
+                3 : 7, // D♯/E♭
+            }[n]
+        },
+        'chromatic': n => n
     },
-    n => n,
-    n => {
+    'relative': {
+        'fifths': n => n,
+        'chromatic': n => {
         return {
             '0'  : 0, 
             '-5' : 1, 
@@ -167,24 +173,21 @@ noteOrders = [
             '3'  : 9,
             '-2' : 10, 
             '5'  : 11, 
-        }[n]
+            }[n]
+        }
     }
-]
+}
 
 rotation = 0;
 
-states = [
-    {modeOrder: modeOrders[0], noteOrder: noteOrders[0], relative: false},
-    {modeOrder: modeOrders[1], noteOrder: noteOrders[0], relative: false},
-    {modeOrder: modeOrders[1], noteOrder: noteOrders[1], relative: true},
-    {modeOrder: modeOrders[0], noteOrder: noteOrders[1], relative: true},
-    {modeOrder: modeOrders[0], noteOrder: noteOrders[2], relative: true},
-    {modeOrder: modeOrders[0], noteOrder: noteOrders[1], relative: false},
-]
+let state = {
+    noteOrder: 'fifths',
+    modeOrder: 'brightness',
+    modeGrouping: 'parallel'
+}
 
-modeOrder = states[0].modeOrder
-noteOrder = states[0].noteOrder
-relative = states.relative;
+modeOrder = modeOrders[state.modeOrder]
+noteOrder = noteOrders[state.modeGrouping][state.noteOrder]
 
 let rScale = d3.scaleLinear().domain([-3,3]).range([0.3 * Math.min(height/2, width/2), 0.9 * Math.min(height/2, width/2)])
 let rScale2 = d3.scaleLinear().domain([-3,3]).range([0.2, 0.65])
@@ -192,62 +195,68 @@ let rScale3 = d3.scaleLinear().domain([-3,3]).range([4, 8])
 let aScale = d3.scaleLinear().domain([0, 12]).range([0, 2 * Math.PI])
 
 let dToArcData = d => { return {
-    'innerRadius': rScale(modeOrder[d.mode] - 0.5),
-    'outerRadius': rScale(modeOrder[d.mode] + 0.5),
+    'innerRadius': rScale(modeOrder(d.mode) - 0.5),
+    'outerRadius': rScale(modeOrder(d.mode) + 0.5),
     'startAngle' : 0,
-    'endAngle'   : aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
+    'endAngle'   : aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                 - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
 }}
 
 //let rotate = d => `rotate(${aScale((relative ? (d.notes[0].accidentals + noteOrder(d.rootNote)) : noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI})`
-let rotate = d => `rotate(${mod(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI, 360)})`
+let rotate = d => `rotate(${mod(aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI, 360)})`
 
 wedges = bg.selectAll('.wedge').data(data).enter().append('g').attr('class','wedge')
     .attr('transform', rotate)
 
 wedges.append('path')
     .attr('d', d => arc(dToArcData(d)))
-    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 80, 100 * rScale2(modeOrder[d.mode])))
+    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder(d.mode) * 30/7 - 30, 80, 100 * rScale2(modeOrder(d.mode))))
 
 // wedges.append('path')
 //     .attr('id', d => `text-path-1-${d.root}-${d.mode}`)
 //     .attr('class','textPath1')
 //     .attr('d', d => {
 //         let arcData = dToArcData(d);
-//         arcData.innerRadius = rScale(modeOrder[d.mode])
-//         arcData.outerRadius = rScale(modeOrder[d.mode])
+//         arcData.innerRadius = rScale(modeOrder(d.mode))
+//         arcData.outerRadius = rScale(modeOrder(d.mode))
 //         return arc(arcData)
 //     })
 
 wedges.append('path')
     .attr('id', d => `text-path-1-${d.root}-${d.mode}`)
     .attr('class','textPath1')
-    //.attr('d', d => `M0,${-rScale(modeOrder[d.mode])} A${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,`)    
+    //.attr('d', d => `M0,${-rScale(modeOrder(d.mode))} A${rScale(modeOrder(d.mode))},${rScale(modeOrder(d.mode))},0,0,1,`)    
     .attr('d', d => {
-        let r = rScale(modeOrder[d.mode]);
-        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let r = rScale(modeOrder(d.mode));
+        let theta = aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                  - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
         let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
-        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+        return `M0,0 a${rScale(modeOrder(d.mode))},${rScale(modeOrder(d.mode))},0,0,1,${l},0`
     })
-    .attr('transform', d => `translate(0,${-rScale(modeOrder[d.mode])}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`)
+    .attr('transform', d => `translate(0,${-rScale(modeOrder(d.mode))}) 
+                             rotate(${(aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote))) 
+                                     - aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`)
 
 wedges.append('path')
     .attr('id', d => `text-path-2-${d.root}-${d.mode}`)
     .attr('class','textPath2')
     // .attr('d', d => {
     //     let arcData = dToArcData(d);
-    //     arcData.innerRadius = rScale(modeOrder[d.mode] - 0.33)
-    //     arcData.outerRadius = rScale(modeOrder[d.mode] - 0.33)
+    //     arcData.innerRadius = rScale(modeOrder(d.mode) - 0.33)
+    //     arcData.outerRadius = rScale(modeOrder(d.mode) - 0.33)
     //     return arc(arcData)
     // })
     .attr('d', d => {
-        let r = rScale(modeOrder[d.mode] - 0.33);
-        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let r = rScale(modeOrder(d.mode) - 0.33);
+        let theta = aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                  - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
         let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
-        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+        return `M0,0 a${rScale(modeOrder(d.mode))},${rScale(modeOrder(d.mode))},0,0,1,${l},0`
     })
     .attr('transform', d => {
-        let r = rScale(modeOrder[d.mode] - 0.33);
-        return `translate(0,${-r}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`
+        let r = rScale(modeOrder(d.mode) - 0.33);
+        return `translate(0,${-r}) rotate(${(aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote))) 
+                                           - aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`
     })
 
 
@@ -261,7 +270,7 @@ wedges.append('text')
     //     return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;
     // })
     .attr('font-size', '.8em')
-    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder[d.mode])))
+    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder(d.mode) * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder(d.mode))))
     .text(d => `${d.root} ${d.mode}`)
 
 wedges.append('text')
@@ -275,7 +284,7 @@ wedges.append('text')
     .attr('startOffset','50%')
     .attr('font-size', '.8em')
     .attr('dy', '1.2em')
-    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder[d.mode] * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder[d.mode])))
+    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder(d.mode) * 30/7 - 30, 50, 100 + 100 * rScale2(modeOrder(d.mode))))
     .text(d => {
         _ = x => x > 0 ? `${x} ♯` : x < 0 ? `${-x} ♭` : `♮`
         if (d.notes.length == 1) return _(d.notes[0].accidentals)
@@ -289,7 +298,7 @@ outlineWedges.append('path')
     .attr('d', d => arc(dToArcData(d)))
     .style('fill', 'none')
     .style('stroke', 'white')
-    .style('stroke-width', d => rScale3(modeOrder[d.mode]))
+    .style('stroke-width', d => rScale3(modeOrder(d.mode)))
     .attr('transform', d => rotate(d))
 
 ccwRotateArrow = controlsG.append('g')
@@ -312,11 +321,11 @@ ccwRotateArrow.append('path')
                  .startAngle(0)
                  .endAngle(2/24 * Math.PI )
     )
-    .style('fill', '#EDD')
+    // .style('fill', '#EDD')
 
 ccwRotateArrow.append('path')
     .attr('d', d => `M1,${-rScale(4.375)} L 1, ${-rScale(4.375)-15} L-15,${-rScale(4.375)} L1,${-rScale(4.375)+15} L 1,${-rScale(4.375)}`)
-    .style('fill', '#EDD')
+    // .style('fill', '#EDD')
 
 
 cwRotateArrow = controlsG.append('g')
@@ -340,45 +349,61 @@ cwRotateArrow.append('path')
                  .startAngle(-2/24 * Math.PI )
                  .endAngle(0)
     )
-    .style('fill', '#DDE')
+    // .style('fill', '#DDE')
 
 cwRotateArrow.append('path')
     .attr('d', d => `M-1,${-rScale(4.375)} L -1, ${-rScale(4.375)-15} L15,${-rScale(4.375)} L-1,${-rScale(4.375)+15} L -1,${-rScale(4.375)}`)
-    .style('fill', '#DDE')
+    // .style('fill', '#DDE')
 
 
 ccwRotateArrow.on('click', e => rotateAnimate(-1))
 cwRotateArrow.on('click', e => rotateAnimate(1))
 
+// controlsG.append('circle')
+//     .attr('cx', 0)
+//     .attr('cy', 0)
+//     .attr('r', rScale(3.5))
+//     //.attr('fill', 'none')
+//     .attr('opacity', 0)
+//     .on('click', e => {
+//         states = states.concat(states).slice(1, states.length+1)
 
-controlsG.append('circle')
-    .attr('cx', 0)
-    .attr('cy', 0)
-    .attr('r', rScale(3.5))
-    //.attr('fill', 'none')
-    .attr('opacity', 0)
-    .on('click', e => {
-        states = states.concat(states).slice(1, states.length+1)
+//         state = states[0]
 
-    animate(states[0].modeOrder, states[0].noteOrder, states[0].relative)
-})
+//         animate(state)
+//     })
 
 function rotateAnimate(direction) {
 
-    rotation += direction;
+    rotation += mod(direction,12);
     
-    animate(states[0].modeOrder, states[0].noteOrder, states[0].relative, duration = 150, fadeText = false)
+    animate(state, duration = 150, fadeText = false)
 }
 
-function animate(modeOrder, noteOrder, relative, duration = 1000, fadeText = true) {
-    console.log(fadeText)
-    let rotate = d => `rotate(${Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) + rotation - 0.5) * 180 / Math.PI)})`
+d3.selectAll('.switch input').on('click', function(e) {
+    if (this.id == 'note-order-chromatic') state.noteOrder ='chromatic'
+    if (this.id == 'note-order-fifths') state.noteOrder = 'fifths'
+    if (this.id == 'mode-order-degree') state.modeOrder = 'degree'
+    if (this.id == 'mode-order-brightness') state.modeOrder = 'brightness'
+    if (this.id == 'mode-grouping-parallel') state.modeGrouping = 'parallel'
+    if (this.id == 'mode-grouping-relative') state.modeGrouping = 'relative'
+
+    animate(state)
+})
+
+function animate(state, duration = 1000, fadeText = true) {
+    modeOrder = modeOrders[state.modeOrder]
+    noteOrder = noteOrders[state.modeGrouping][state.noteOrder]
+
+
+    let rotate = d => `rotate(${Math.round(aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) + rotation - 0.5) * 180 / Math.PI)})`
 
     let dToArcData = d => { return {
-        'innerRadius': rScale(modeOrder[d.mode] - 0.5),
-        'outerRadius': rScale(modeOrder[d.mode] + 0.5),
+        'innerRadius': rScale(modeOrder(d.mode) - 0.5),
+        'outerRadius': rScale(modeOrder(d.mode) + 0.5),
         'startAngle' : 0,
-        'endAngle'   : aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
+        'endAngle'   : aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                     - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
     }}
 
     wedges = bg.selectAll('.wedge').data(data)
@@ -386,12 +411,11 @@ function animate(modeOrder, noteOrder, relative, duration = 1000, fadeText = tru
     textDelay = 0
     
     if (fadeText) {
-        console.log('fade text called')
         wedges.selectAll('text')
         .style('opacity', 1)
         .transition()
         .delay((d, i) => {
-            return (13 * d.rootNote) + 21 * (modeOrder[d.mode]) 
+            return (13 * d.rootNote) + 21 * (modeOrder(d.mode)) 
         })
         .duration(300)
         .style('opacity', 0)
@@ -400,7 +424,7 @@ function animate(modeOrder, noteOrder, relative, duration = 1000, fadeText = tru
         // .style('display', 'none')
         .transition()
         // .delay((d, i) => {
-        //     return duration -100 + (5 * d.rootNote) + 8 * (modeOrder[d.mode]) 
+        //     return duration -100 + (5 * d.rootNote) + 8 * (modeOrder(d.mode)) 
         // })
         .delay(duration - (10 * 12 + 16 * 7))
         // .duration(0)   
@@ -417,7 +441,7 @@ function animate(modeOrder, noteOrder, relative, duration = 1000, fadeText = tru
     .duration(duration)
     .attrTween('transform', function(d) {
         let a = parseFloat(this.getAttribute("transform").split('(')[1].split(')')[0]) % 360
-        let b = Math.round(aScale((relative ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5 + rotation) * 180 / Math.PI) % 360
+        let b = Math.round(aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5 + rotation) * 180 / Math.PI) % 360
         if (a - b > 180) b += 360; else if (b - a > 180) a += 360
         if (Math.abs(a - b) % 180 < 1) {
             while (a < b) {
@@ -437,26 +461,30 @@ function animate(modeOrder, noteOrder, relative, duration = 1000, fadeText = tru
     .delay(textDelay)
     .duration(duration)
     .attr('d', d => {
-        let r = rScale(modeOrder[d.mode]);
-        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let r = rScale(modeOrder(d.mode));
+        let theta = aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                  - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
         let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
-        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+        return `M0,0 a${rScale(modeOrder(d.mode))},${rScale(modeOrder(d.mode))},0,0,1,${l},0`
     })
-    .attr('transform', d => `translate(0,${-rScale(modeOrder[d.mode])}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`)
+    .attr('transform', d => `translate(0,${-rScale(modeOrder(d.mode))}) rotate(${(aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote))) 
+                                                                                      - aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`)
 
     wedges.select('.textPath2')
     .transition()
     .delay(textDelay)
     .duration(duration)
     .attr('d', d => {
-        let r = rScale(modeOrder[d.mode] - 0.33);
-        let theta = aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) - aScale((relative ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
+        let r = rScale(modeOrder(d.mode) - 0.33);
+        let theta = aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                  - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5);
         let l = r * Math.sqrt(2 - 2 * Math.cos(theta))
-        return `M0,0 a${rScale(modeOrder[d.mode])},${rScale(modeOrder[d.mode])},0,0,1,${l},0`
+        return `M0,0 a${rScale(modeOrder(d.mode))},${rScale(modeOrder(d.mode))},0,0,1,${l},0`
     })
     .attr('transform', d => {
-        let r = rScale(modeOrder[d.mode] - 0.33);
-        return `translate(0,${-r}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`
+        let r = rScale(modeOrder(d.mode) - 0.33);
+        return `translate(0,${-r}) rotate(${(aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote))) 
+                                           - aScale((state.modeGrouping == 'relative' ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`
     })
 
     // wedges.selectAll('text').transition()
