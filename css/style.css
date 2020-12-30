@@ -32,6 +32,14 @@ h1 {
     display: inline-flex;
 }
 
+#notes {
+    text-align:center;
+}
+
+#noModeSelected {
+    color: #555;
+}
+
 footer {
     position: fixed;
     bottom: 0;

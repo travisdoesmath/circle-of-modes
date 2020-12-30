@@ -1,5 +1,81 @@
 data = createData()
 
+    var audio = document.getElementById('notes');
+    var segmentEnd;
+    var audioQueue = [];
+
+    audio.addEventListener('timeupdate', function (){
+        if (segmentEnd && audio.currentTime >= segmentEnd) {
+            audio.pause();
+            audioQueue.shift();
+            if (audioQueue.length > 0) playSegments();
+        }   
+        console.log(audio.currentTime);
+    }, false);
+
+    function playSegments(){
+        segmentEnd = audioQueue[0][1];
+        audio.currentTime = audioQueue[0][0];
+        audio.play();
+    }
+
+    function play(notes) {
+        noteTimes = {
+            'C1' : [0, 0.25],
+            'C♯1': [0.8, 1.25],
+            'D♭1': [0.8, 1.25],
+            'D1' : [1.8, 2.25],
+            'D♯1': [2.8, 3.25],
+            'E♭1': [2.8, 3.25],
+            'E1' : [3.8, 4.25],
+            'F♭1': [3.8, 4.25],
+            'E♯1': [4.8, 5.25],
+            'F1' : [4.8, 5.25],
+            'F♯1': [5.8, 6.25],
+            'G♭1': [5.8, 6.25],
+            'G1' : [6.8, 7.25],
+            'G♯1': [7.8, 8.25],
+            'A♭1': [7.8, 8.25],
+            'A1' : [8.8, 9.25],
+            'A♯1': [9.8, 10.25],
+            'B♭1': [9.8, 10.25],
+            'B1' : [10.8, 11.25],
+            'C♭1': [10.8, 11.25],
+            'B♯1': [11.8, 12.25],           
+
+            'C2' : [11.8, 12.25],
+            'C♯2': [12.8, 13.25],
+            'D♭2': [12.8, 13.25],
+            'D2' : [13.8, 14.25],
+            'D♯2': [14.8, 15.25],
+            'E♭2': [14.8, 15.25],
+            'E2' : [15.8, 16.25],
+            'F♭2': [15.8, 16.25],
+            'E♯2': [16.8, 17.25],
+            'F2' : [16.8, 17.25],
+            'F♯2': [17.8, 18.25],
+            'G♭2': [17.8, 18.25],
+            'G2' : [18.8, 19.25],
+            'G♯2': [19.8, 20.25],
+            'A♭2': [19.8, 20.25],
+            'A2' : [20.8, 21.25],
+            'A♯2': [21.8, 22.25],
+            'B♭2': [21.8, 22.25],
+            'B2' : [22.8, 23.25],
+            'C♭2': [22.8, 23.25],
+            'B♯2': [23.8, 24.25],           
+
+        }
+        notes.forEach(n => audioQueue.push(noteTimes[n]))
+
+        playSegments();
+    }
+
+    // d3.select('.modeNotes').on('click', e => {
+    //     play(['C1','D1','E1','F1'])
+    // })
+
+
 let svg = d3.select("svg"),
     defs = svg.append('defs'),
     g = svg.append('g'),
@@ -314,8 +390,7 @@ function drawSelected() {
 
     modeNotes = d3.select('#selectedModes').selectAll('.modeNotes').data(selected)
 
-    modeNotes.enter()
-    .append('li')
+    modeNotes.enter().append('li')
     .attr('class', 'modeNotes')
     .merge(modeNotes)
     .text(d => {
@@ -327,10 +402,30 @@ function drawSelected() {
                 notes = d.notes.filter(x => x.accidentals > 0)[0]
             }
         }
-        return `${d.root} ${d.mode}: ${notes.names.join(' - ')}`;
+        return `${d.root} ${d.mode}: ${notes.names.join(' - ')} - ${notes.names[0]}`;
+    })
+    .style('cursor', 'pointer')
+    .on('click', (e, d) => {
+        if (audioQueue.length == 0) {
+            octave = 1
+            notes = []
+            for (let i = 0; i < 8; i++) {
+                if (d.notes[0].names[i % 7][0] == 'C' && i != 0) octave += 1
+                notes.push(`${d.notes[0].names[i % 7]}${octave}`)
+            }
+            play(notes)
+        }
     })
 
     modeNotes.exit().remove()
+
+    if (document.getElementById('selectedModes').childElementCount == 1) {
+        d3.select('#noModeSelected')
+            .style('display', 'block')
+    } else {
+        d3.select('#noModeSelected')
+            .style('display', 'none')
+    }
 }
 
 function rotateUpdate(direction) {

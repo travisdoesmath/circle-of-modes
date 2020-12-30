@@ -17,6 +17,7 @@
 </head>
 
 <body>
+    <audio id='notes' src="notes.mp3" preload="auto"></audio>
     <div class="column" id="body">
         <h1 class="title">Circle of Modes</h1>
         <div class='content'>
@@ -67,7 +68,12 @@
                     </li>
 
                 </ul>
-                <ul id="selectedModes"></ul>
+                <div id="notes">
+                    <h3>Selected Mode Notes (Click to Play)</h3>
+                    <ul id="selectedModes">
+                        <li id="noModeSelected">No mode selected</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
