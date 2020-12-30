@@ -77,7 +77,7 @@ function getModeNoteNames(startingNote, mode) {
         return {'names': notes, 'accidentals': a.accidentals}
     }
 
-    let outObject = {'mode':mode, 'rootNote':startingNote}
+    let outObject = {'mode':mode, 'rootNote':startingNote, 'selected': false}
 
     if (bestSharp.accidentals < -bestFlat.accidentals || bestSharp.accidentals == 0) {
         outObject.notes = [formatNotes(bestSharp)]
@@ -104,13 +104,58 @@ for (let i = 0; i < 12; i++) {
 }
 
 
-let svg = d3.select("svg")
-    g = svg.append('g')
+let svg = d3.select("svg"),
+    defs = svg.append('defs'),
+    g = svg.append('g'),
 	width = +svg.attr("width"),
 	height = +svg.attr("height")
 	bg = g.append("g").attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
     fg = g.append("g").attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
     controlsG = svg.append('g').attr("transform", "translate(" + width*.5 + "," + height*.5 + ")");
+
+defs.append('pattern')
+    .attr('id', 'diagonalHatch')
+    .attr('patternUnits', 'userSpaceOnUse')
+    .attr('width', 4)
+    .attr('height', 4)
+  .append('path')
+    .attr('d', 'M-1,1l2,-2M0,4l4,-4M3,5l2,-2')
+    .style('stroke','white')
+    .style('stroke-width', 1)
+
+diagStripes = defs.append('pattern')
+    .attr('id', 'diag-stripes')
+    .attr('height', 8)
+    .attr('width', 8)
+    .attr('patternUnits', 'userSpaceOnUse')
+    .attr('patternTransform','rotate(45)')
+
+diagStripes.append('rect')
+    .attr('width', 8)
+    .attr('height', 8)
+    .attr('fill', '#BBB')
+    // .attr('opacity', 0.5)
+    .attr('transform','translate(0,0)')
+
+
+diagStripes.append('rect')
+    .attr('width', 4)
+    .attr('height', 8)
+    .attr('fill','white')
+    // .attr('opacity', 0.5)
+    .attr('transform','translate(0,0)')
+
+defs.append('mask')
+    .attr('id', 'diag-stripes-mask')
+    .attr('width', 2)
+    .attr('height', 2)
+    .append('rect')
+    .attr('width', 1000)
+    .attr('height', 1000)
+    .attr('y', -500)
+    .attr('fill', 'url(#diag-stripes)')
+    // .attr('fill', 'url(#diagonalHatch)')
+
 
 let arc = d3.arc()
 
@@ -186,6 +231,8 @@ let state = {
     modeGrouping: 'parallel'
 }
 
+selected = data.filter(d => d.root == 'D' && d.mode == 'Dorian')
+
 modeOrder = modeOrders[state.modeOrder]
 noteOrder = noteOrders[state.modeGrouping][state.noteOrder]
 
@@ -205,12 +252,28 @@ let dToArcData = d => { return {
 //let rotate = d => `rotate(${aScale((relative ? (d.notes[0].accidentals + noteOrder(d.rootNote)) : noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI})`
 let rotate = d => `rotate(${mod(aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) - 0.5) * 180 / Math.PI, 360)})`
 
-wedges = bg.selectAll('.wedge').data(data).enter().append('g').attr('class','wedge')
+wedges = bg.selectAll('.wedgeGroup').data(data).enter().append('g').attr('class','wedgeGroup')
     .attr('transform', rotate)
 
 wedges.append('path')
+    .attr('class','wedge')
     .attr('d', d => arc(dToArcData(d)))
-    .style('fill', d => d3.hcl(d.rootNote * 30 + modeOrder(d.mode) * 30/7 - 30, 80, 100 * rScale2(modeOrder(d.mode))))
+    .attr('fill', 'white')
+
+wedges.append('path')
+    .attr('class','wedge')
+    .attr('d', d => arc(dToArcData(d)))
+    .attr('fill', d => d3.hcl(d.rootNote * 30 + modeOrder(d.mode) * 30/7 - 30, 80, 100 * rScale2(modeOrder(d.mode))))
+    .attr('mask', d => d.notes[0].accidentals === 0 ? "url(#diag-stripes-mask)" : "")
+    .on('click', (e, d) => {
+        if (selected.some(x => x.root == d.root && x.mode == d.mode)) {
+            selected = selected.filter(x => x.root != d.root || x.mode != d.mode)
+        } else {
+            selected.push(d)
+        }
+        drawSelected()
+    })
+
 
 // wedges.append('path')
 //     .attr('id', d => `text-path-1-${d.root}-${d.mode}`)
@@ -292,14 +355,7 @@ wedges.append('text')
     })
 
 
-outlineWedges = fg.selectAll('.wedge-outline').data(data.filter(d => d.notes[0].accidentals == 0)).enter().append('g')
-outlineWedges.append('path')
-    .attr('class','wedge-outline')
-    .attr('d', d => arc(dToArcData(d)))
-    .style('fill', 'none')
-    .style('stroke', 'white')
-    .style('stroke-width', d => rScale3(modeOrder(d.mode)))
-    .attr('transform', d => rotate(d))
+
 
 ccwRotateArrow = controlsG.append('g')
     .attr('class','rotate-arrow')
@@ -373,6 +429,48 @@ cwRotateArrow.on('click', e => rotateAnimate(1))
 //         animate(state)
 //     })
 
+drawSelected()
+
+function drawSelected() {
+    modeOrder = modeOrders[state.modeOrder]
+    noteOrder = noteOrders[state.modeGrouping][state.noteOrder]
+
+    let dToArcData = d => { return {
+        'innerRadius': rScale(modeOrder(d.mode) - 0.5),
+        'outerRadius': rScale(modeOrder(d.mode) + 0.5),
+        'startAngle' : 0,
+        'endAngle'   : aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) + 0.5) 
+                     - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
+    }}
+
+    let rotate = d => `rotate(${Math.round(aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals): noteOrder(d.rootNote)) + rotation - 0.5) * 180 / Math.PI)})`
+
+
+    outlineWedges = fg.selectAll('.wedge-outline').data(selected)
+    
+    outlineWedges.enter()
+        .append('path')
+        .attr('class','wedge-outline')
+        .merge(outlineWedges)
+        .attr('d', d => arc(dToArcData(d)))
+        .style('fill', 'none')
+        .style('stroke', 'white')
+        .style('stroke-width', d => rScale3(modeOrder(d.mode)))
+        .attr('transform', d => rotate(d))
+
+    outlineWedges.exit().remove()
+
+    modeNotes = d3.select('#selectedModes').selectAll('.modeNotes').data(selected)
+
+    modeNotes.enter()
+    .append('li')
+    .attr('class', 'modeNotes')
+    .merge(modeNotes)
+    .text(d => `${d.root} ${d.mode}: ${d.notes[0].names.join(' - ')}`)
+
+    modeNotes.exit().remove()
+}
+
 function rotateAnimate(direction) {
 
     rotation += mod(direction,12);
@@ -406,7 +504,7 @@ function animate(state, duration = 1000, fadeText = true) {
                      - aScale((state.modeGrouping == 'relative' ? noteOrder(d.notes[0].accidentals) : noteOrder(d.rootNote)) - 0.5),
     }}
 
-    wedges = bg.selectAll('.wedge').data(data)
+    wedges = bg.selectAll('.wedgeGroup').data(data)
     
     textDelay = 0
     
@@ -451,7 +549,7 @@ function animate(state, duration = 1000, fadeText = true) {
         return d3.interpolateString(`rotate(${a})`, `rotate(${b})`)
     })
                             
-    wedges.select('path').transition()
+    wedges.selectAll('.wedge').transition()
     .delay(textDelay)
     .duration(duration)
     .attr('d', d => arc(dToArcData(d))) 
@@ -493,7 +591,7 @@ function animate(state, duration = 1000, fadeText = true) {
     //     let centroid = arc.centroid(dToArcData(d));
     //     return `translate(${centroid[0]},${centroid[1]}) rotate(${(aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote))) - aScale((relative ? d.notes[0].accidentals : noteOrder(d.rootNote)) - 0.5)) * 180 / Math.PI})`;})
 
-    outlineWedges = fg.selectAll('.wedge-outline').data(data.filter(d => d.notes[0].accidentals == 0))
+    outlineWedges = fg.selectAll('.wedge-outline').data(selected)
 
     outlineWedges.transition()
     .delay(textDelay)

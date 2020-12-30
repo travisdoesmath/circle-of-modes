@@ -24,9 +24,13 @@ h1 {
 }
 
 .container {
-  width: 100%;
   display: flex;
   flex-wrap: wrap;
+}
+
+#selectedModes {
+    list-style: none;
+    text-align: center;
 }
 
 .rotate-arrow{
@@ -45,4 +49,8 @@ h1 {
 svg {
     /* shape-rendering: optimizeSpeed; */
     text-rendering: optimizeSpeed;
+}
+
+text {
+    pointer-events: none;
 }

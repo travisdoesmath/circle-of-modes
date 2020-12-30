@@ -21,39 +21,42 @@
         <h1 class="title">Circle of Modes</h1>
         <div class='container'>
             <svg width="960" height="960"></svg>
-            <ul class="options">
-                <li>
-                    <span>Note order</span>
-                    <div class="switch switch--horizontal">
-                    <input id="note-order-fifths" type="radio" name="note-order-switch" checked="checked"/>
-                    <label for="note-order-fifths">Fifths</label>
-                    <input id="note-order-chromatic" type="radio" name="note-order-switch"/>
-                    <label for="note-order-chromatic">Chromatic</label>
-                    <span class="toggle-outside"><span class="toggle-inside"></span></span>
-                    </div>
-                </li>
-                <li>
-                    <span>Mode order</span>
-                    <div class="switch switch--horizontal">
-                    <input id="mode-order-brightness" type="radio" name="mode-order-switch" checked="checked"/>
-                    <label for="mode-order-brightness">Brightness</label>
-                    <input id="mode-order-degree" type="radio" name="mode-order-switch"/>
-                    <label for="mode-order-degree">Degree</label>
-                    <span class="toggle-outside"><span class="toggle-inside"></span></span>
-                    </div>
-                </li>
-                <li>
-                    <span>Mode grouping</span>
-                    <div class="switch switch--horizontal">
-                    <input id="mode-grouping-parallel" type="radio" name="mode-grouping-switch" checked="checked"/>
-                    <label for="mode-grouping-parallel">Parallel</label>
-                    <input id="mode-grouping-relative" type="radio" name="mode-grouping-switch"/>
-                    <label for="mode-grouping-relative">Relative</label>
-                    <span class="toggle-outside"><span class="toggle-inside"></span></span>
-                    </div>
-                </li>
+            <div>
+                <ul class="options">
+                    <li>
+                        <span>Note order</span>
+                        <div class="switch switch--horizontal">
+                        <input id="note-order-fifths" type="radio" name="note-order-switch" checked="checked"/>
+                        <label for="note-order-fifths">Fifths</label>
+                        <input id="note-order-chromatic" type="radio" name="note-order-switch"/>
+                        <label for="note-order-chromatic">Chromatic</label>
+                        <span class="toggle-outside"><span class="toggle-inside"></span></span>
+                        </div>
+                    </li>
+                    <li>
+                        <span>Mode order</span>
+                        <div class="switch switch--horizontal">
+                        <input id="mode-order-brightness" type="radio" name="mode-order-switch" checked="checked"/>
+                        <label for="mode-order-brightness">Brightness</label>
+                        <input id="mode-order-degree" type="radio" name="mode-order-switch"/>
+                        <label for="mode-order-degree">Degree</label>
+                        <span class="toggle-outside"><span class="toggle-inside"></span></span>
+                        </div>
+                    </li>
+                    <li>
+                        <span>Mode grouping</span>
+                        <div class="switch switch--horizontal">
+                        <input id="mode-grouping-parallel" type="radio" name="mode-grouping-switch" checked="checked"/>
+                        <label for="mode-grouping-parallel">Parallel</label>
+                        <input id="mode-grouping-relative" type="radio" name="mode-grouping-switch"/>
+                        <label for="mode-grouping-relative">Relative</label>
+                        <span class="toggle-outside"><span class="toggle-inside"></span></span>
+                        </div>
+                    </li>
 
-            </ul>
+                </ul>
+                <ul id="selectedModes"></ul>
+            </div>
         </div>
     </div>
     <script src="js/main.js"></script>
