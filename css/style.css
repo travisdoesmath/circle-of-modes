@@ -12,7 +12,7 @@ h1 {
     font-size: 46px;
     font-weight: 500;
     letter-spacing: -1px;
-    margin: 0.1em 0;
+    margin: 1em 0;
 }
 
 .column {
@@ -23,14 +23,34 @@ h1 {
     padding: 0 10px;
 }
 
-.container {
+.content {
   display: flex;
   flex-wrap: wrap;
 }
 
+.secondary-content {
+    display: inline-flex;
+}
+
+
+@media (min-width: 1460px) {
+    .secondary-content {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 1460px) {
+    .secondary-content {
+        flex-direction: row;
+    }
+}
+
+
 #selectedModes {
     list-style: none;
     text-align: center;
+    font-size: 1.5rem;
+    margin: 1rem auto;
 }
 
 .rotate-arrow{

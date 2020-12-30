@@ -8,6 +8,7 @@
 
 .options {
   list-style: none;
+  margin: 0;
   font-size: 1.5rem;
   line-height: 3rem;
   display: inline-block;
@@ -15,7 +16,7 @@
 }
 
 .options>li {
-  margin: 2rem 0 0 0;
+  margin: 0 0 0 2rem;
 }
 
 .switch {
